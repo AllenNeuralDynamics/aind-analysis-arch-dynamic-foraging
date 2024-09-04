@@ -8,7 +8,7 @@ from aind_dynamic_foraging_models.generative_model import ForagerCollection
 
 def run():
     # Load data
-    session_id = "705599_2024-05-31_14-06-54"
+    session_id = "703548_2024-03-01_08-51-32"
     (
         baiting,
         choice_history,
@@ -20,7 +20,10 @@ def run():
 
     # Remove NaNs
     # TODO: handle in model fitting
-    
+    ignored = np.isnan(choice_history)
+    choice_history = choice_history[~ignored]
+    reward_history = reward_history[~ignored].to_numpy()
+    p_reward = [p[~ignored] for p in p_reward]
     
     # Initialize model
     forager = ForagerCollection().get_preset_forager("Hattori2019", seed=42)
