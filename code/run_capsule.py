@@ -30,12 +30,12 @@ def run():
     forager.fit(
         choice_history,
         reward_history,
-        DE_kwargs=dict(workers=1, disp=False, seed=np.random.default_rng(42)),
+        DE_kwargs=dict(workers=mp.cpu_count(), disp=False, seed=np.random.default_rng(42)),
         k_fold_cross_validation=0,
     )
     fig_fitting, axes = forager.plot_fitted_session(if_plot_latent=True)
     
-    fig_fitting.savefig(f"results/{session_id}_Hattori_fitted.png")
+    fig_fitting.savefig(f"/root/capsule/results/{session_id}_Hattori_fitted.png")
     
 
 if __name__ == "__main__": run()
