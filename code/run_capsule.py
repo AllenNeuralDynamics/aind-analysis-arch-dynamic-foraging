@@ -6,10 +6,10 @@ import glob
 import logging
 
 import multiprocessing as mp
-import numpy as np
 
-from nwb_io import get_history_from_nwb
-from aind_dynamic_foraging_models.generative_model import ForagerCollection
+from analysis import (
+    fit_mle_one_session,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -18,49 +18,6 @@ formatter = logging.Formatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
-
-def fit_mle_one_session(job_dict):
-    job_hash = job_dict["job_hash"]
-    nwb_name = job_dict["nwb_name"]
-    analysis_args = job_dict["job_spec"]["analysis_args"]
-    
-    logger.info(f"MLE fitting for {nwb_name} with {analysis_args['agent_class']}")
-    
-    # Load data
-    session_id = job_dict["nwb_name"].replace(".nwb", "")
-
-    (
-        baiting,
-        choice_history,
-        reward_history,
-        p_reward,
-        autowater_offered,
-        random_number,
-    ) = get_history_from_nwb(f"/root/capsule/data/{session_id}.nwb")
-
-    # Remove NaNs
-    # TODO: handle in model fitting
-    ignored = np.isnan(choice_history)
-    choice_history = choice_history[~ignored]
-    reward_history = reward_history[~ignored].to_numpy()
-    p_reward = [p[~ignored] for p in p_reward]
-    
-    # Initialize model
-    forager = ForagerCollection().get_forager(
-       agent_class_name=analysis_args["agent_class"],
-       agent_kwargs=analysis_args["agent_kwargs"],
-    )
-    forager.fit(
-       choice_history,
-       reward_history,
-       **analysis_args["fit_kwargs"],
-    )
-    
-    # Saving results
-    os.makedirs(f"/root/capsule/results/{job_hash}", exist_ok=True)
-    
-    fig_fitting, axes = forager.plot_fitted_session(if_plot_latent=True)
-    fig_fitting.savefig(f"/root/capsule/results/fitted.png")
 
 
 JOB_MAPPER = {
