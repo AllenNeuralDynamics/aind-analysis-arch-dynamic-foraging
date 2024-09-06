@@ -1,16 +1,24 @@
 import logging
+import os
 
 import numpy as np
+import multiprocessing as mp
 
 from nwb_io import get_history_from_nwb
 from aind_dynamic_foraging_models.generative_model import ForagerCollection
 
 logger = logging.getLogger(__name__)
 
-def fit_mle_one_session(job_dict):
+def fit_mle_one_session(job_dict, parallel_inside_job=False):
     job_hash = job_dict["job_hash"]
     nwb_name = job_dict["nwb_name"]
     analysis_args = job_dict["job_spec"]["analysis_args"]
+
+    # Overwrite DE_workers
+    if parallel_inside_job:
+        analysis_args["fit_kwargs"]["DE_kwargs"]["workers"] = mp.cpu_count()
+    else:
+        analysis_args["fit_kwargs"]["DE_kwargs"]["workers"] = 1
     
     logger.info(f"MLE fitting for {nwb_name} with {analysis_args['agent_class']}")
     
