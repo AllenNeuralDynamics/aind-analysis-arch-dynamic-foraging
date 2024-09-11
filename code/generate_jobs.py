@@ -12,6 +12,7 @@ nwbs = [
 analysis_specs = [
     {
         "analysis_name": "MLE fitting",
+        "analysis_libs": ["aind_dynamic_foraging_models"],
         "analysis_args": {
             "agent_class": "ForagerQLearning",
             "agent_kwargs": {
@@ -22,18 +23,19 @@ analysis_specs = [
             },
             "fit_kwargs": {
                 "DE_kwargs": {"workers": 1, "disp": False},
-                "k_fold_cross_validation": 10,
+                "k_fold_cross_validation": 2,
             },
         },
     },
     {
         "analysis_name": "MLE fitting",
+        "analysis_libs": ["aind_dynamic_foraging_models"],
         "analysis_args": {
             "agent_class": "ForagerLossCounting",
             "agent_kwargs": {"win_stay_lose_switch": True, "choice_kernel": "none"},
             "fit_kwargs": {
                 "DE_kwargs": {"workers": 1, "disp": False},
-                "k_fold_cross_validation": 10,
+                "k_fold_cross_validation": 2,
             },
         },
     },
