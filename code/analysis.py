@@ -58,3 +58,44 @@ def fit_mle_one_session(job_dict, parallel_inside_job=False):
     
     fig_fitting, axes = forager.plot_fitted_session(if_plot_latent=True)
     fig_fitting.savefig(f"{result_dir}/fitted.png")
+    
+    #%%
+    import s3fs
+    import pickle
+    fs = s3fs.S3FileSystem(anon=False)
+    s3_results_root = "aind-behavior-data/foraging_nwb_bonsai_processed/v2"
+    with fs.open(f"{s3_results_root}/{job_hash}/fitted.png", "wb") as f:
+        fig_fitting.savefig(f)
+        
+    # Save to pickle on s3
+    # Have to flatten pydantic models in forager for pickle to work
+    forager.ParamModel = forager.ParamModel.model_json+()
+    forager.ParamFitBoundModel = forager.ParamFitBoundModel.schema_json()
+    forager.params = forager.params.model_dump()
+
+    with fs.open(f"{s3_results_root}/{job_hash}/forager.pkl", "wb") as f:
+        pickle.dump(forager, f)
+        
+    # Reload from pickle
+    with fs.open(f"{s3_results_root}/{job_hash}/forager.pkl", "rb") as f:
+        forager_reloaded = pickle.load(f)
+        
+    # Recover pydantic models if needed
+    forager_tmp = forager_reloaded.__class__(**forager_reloaded.agent_kwargs)
+    forager_reloaded.ParamModel = forager_tmp.ParamModel
+    forager_reloaded.ParamFitBoundModel = forager_tmp.ParamFitBoundModel
+    forager.params = forager_reloaded.ParamModel(**forager.params)
+    
+    # Test
+    forager.plot_fitted_session(if_plot_latent=True)
+    
+    # -- Upsert key numbers to docDB --
+    
+    
+    #%%
+    
+def fitting_result_to_json():
+    pass
+
+def upload_json_to_docDB():
+    pass
