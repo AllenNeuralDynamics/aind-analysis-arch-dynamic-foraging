@@ -6,25 +6,27 @@ import logging
 
 import multiprocessing as mp
 
-from analysis import (
-    fit_mle_one_session,
-)
+import analysis_wrappers
 
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     handlers=[logging.FileHandler('run.log')])
 logger = logging.getLogger(__name__)
 
-JOB_MAPPER = {
-    "MLE fitting": fit_mle_one_session,
+ANALYSIS_MAPPER = {
+    "MLE fitting": "mle_fitting",
 }
 
 def _run_one_job(job_file, parallel_inside_job):
     with open(job_file) as f:
         job_dict = json.load(f)
     
-    # Trigger job
-    JOB_MAPPER[job_dict["job_spec"]["analysis_name"]](job_dict, parallel_inside_job)
+    # Get analysis function
+    package_name = ANALYSIS_MAPPER[job_dict["job_spec"]["analysis_name"]]
+    analysis_fun = getattr(analysis_wrappers, package_name).wrapper_main
+    
+    # Trigger analysis function
+    analysis_fun(job_dict, parallel_inside_job)
 
 
 def run(parallel_on_jobs=False):
