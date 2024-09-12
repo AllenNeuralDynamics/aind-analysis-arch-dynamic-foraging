@@ -12,6 +12,7 @@ nwbs = [
 analysis_specs = [
     {
         "analysis_name": "MLE fitting",
+        "analysis_ver": "first version @ 0.10.0",
         "analysis_libs": ["aind_dynamic_foraging_models"],
         "analysis_args": {
             "agent_class": "ForagerQLearning",
@@ -22,19 +23,20 @@ analysis_specs = [
                 "action_selection": "softmax",
             },
             "fit_kwargs": {
-                "DE_kwargs": {"workers": 1, "disp": False},
+                "DE_kwargs": {"workers": 1, "disp": False, "polish": False},
                 "k_fold_cross_validation": 2,
             },
         },
     },
     {
         "analysis_name": "MLE fitting",
+        "analysis_ver": "first version @ 0.10.0",
         "analysis_libs": ["aind_dynamic_foraging_models"],
         "analysis_args": {
             "agent_class": "ForagerLossCounting",
             "agent_kwargs": {"win_stay_lose_switch": True, "choice_kernel": "none"},
             "fit_kwargs": {
-                "DE_kwargs": {"workers": 1, "disp": False},
+                "DE_kwargs": {"workers": 1, "disp": False, "polish": False},
                 "k_fold_cross_validation": 2,
             },
         },
@@ -50,7 +52,7 @@ if __name__ == "__main__":
     for nwb, analysis_spec in itertools.product(nwbs, analysis_specs):
         job_dict = {
             "nwb_name": nwb,
-            "job_spec": analysis_spec,
+            "analysis_spec": analysis_spec,
         }
         job_hash = hash_dict(json.dumps(job_dict))
         job_dict["job_hash"] = job_hash  # Add hash to job_dict

@@ -3,10 +3,9 @@
 import json
 import glob
 import logging
+import importlib
 
 import multiprocessing as mp
-
-import analysis_wrappers
 
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -21,11 +20,11 @@ def _run_one_job(job_file, parallel_inside_job):
     with open(job_file) as f:
         job_dict = json.load(f)
     
-    # Get analysis function
-    package_name = ANALYSIS_MAPPER[job_dict["job_spec"]["analysis_name"]]
-    analysis_fun = getattr(analysis_wrappers, package_name).wrapper_main
+    # Rounte to analysis function
+    package_name = ANALYSIS_MAPPER[job_dict["analysis_spec"]["analysis_name"]]
+    analysis_fun = importlib.import_module(f"analysis_wrappers.{package_name}").wrapper_main
     
-    # Trigger analysis function
+    # Trigger analysis
     analysis_fun(job_dict, parallel_inside_job)
 
 

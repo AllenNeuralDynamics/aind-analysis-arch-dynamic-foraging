@@ -5,7 +5,7 @@ import time
 import numpy as np
 import multiprocessing as mp
 
-from nwb_io import get_history_from_nwb
+from utils.nwb_io import get_history_from_nwb
 from aind_dynamic_foraging_models.generative_model import ForagerCollection
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ def wrapper_main(job_dict, parallel_inside_job=False):
     
     job_hash = job_dict["job_hash"]
     nwb_name = job_dict["nwb_name"]
-    analysis_args = job_dict["job_spec"]["analysis_args"]
+    analysis_args = job_dict["analysis_spec"]["analysis_args"]
 
     # Overwrite DE_workers
     if parallel_inside_job:
@@ -43,8 +43,7 @@ def wrapper_main(job_dict, parallel_inside_job=False):
     choice_history = choice_history[~ignored]
     reward_history = reward_history[~ignored].to_numpy()
 
-
-    # Initialize model
+    # -- Initialize model --
     forager = ForagerCollection().get_forager(
        agent_class_name=analysis_args["agent_class"],
        agent_kwargs=analysis_args["agent_kwargs"],
@@ -101,7 +100,7 @@ def wrapper_main(job_dict, parallel_inside_job=False):
 
     import pkg_resources
     analysis_libs = {lib: pkg_resources.get_distribution(lib).version
-                     for lib in job_dict["job_spec"]["analysis_libs"]}
+                     for lib in job_dict["analysis_spec"]["analysis_libs"]}
         
     analysis_results = forager.get_fitting_result_dict()
 
