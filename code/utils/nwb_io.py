@@ -4,7 +4,7 @@ import numpy as np
 from pynwb import NWBHDF5IO
 
 
-def get_history_from_nwb(nwb_file):
+def get_history_from_nwb(nwb):
     """Get choice and reward history from nwb file"""
 
     io = NWBHDF5IO(nwb_file, mode="r")

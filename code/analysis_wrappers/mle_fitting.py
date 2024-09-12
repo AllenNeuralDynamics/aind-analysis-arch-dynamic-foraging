@@ -39,7 +39,7 @@ def wrapper_main(job_dict, parallel_inside_job=False):
         _,
         autowater_offered,
         random_number,
-    ) = get_history_from_nwb(f"/root/capsule/data/{session_id}.nwb")
+    ) = get_history_from_nwb(f"/root/capsule/data/foraging_nwb_bonsai/{session_id}.nwb")
 
     # Remove NaNs
     ignored = np.isnan(choice_history)
