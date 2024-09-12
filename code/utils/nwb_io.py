@@ -4,10 +4,10 @@ import numpy as np
 from pynwb import NWBHDF5IO
 
 
-def get_history_from_nwb(nwb):
+def get_history_from_nwb(nwb_file_name):
     """Get choice and reward history from nwb file"""
 
-    io = NWBHDF5IO(nwb_file, mode="r")
+    io = NWBHDF5IO(nwb_file_name, mode="r")
     nwb = io.read()
     df_trial = nwb.trials.to_dataframe()
 
