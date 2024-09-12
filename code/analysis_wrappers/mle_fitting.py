@@ -1,11 +1,14 @@
 import logging
 import os
 import time
+import pkg_resources
 
 import numpy as np
 import multiprocessing as mp
 
 from utils.nwb_io import get_history_from_nwb
+from utils.docDB_io import insert_docDB_ssh
+from utils.aws_io import upload_s3_fig, upload_s3_pkl
 from aind_dynamic_foraging_models.generative_model import ForagerCollection
 
 logger = logging.getLogger(__name__)
@@ -13,7 +16,7 @@ logger = logging.getLogger(__name__)
 def wrapper_main(job_dict, parallel_inside_job=False):
     """Main entrance of this analysis"""
     start_time = time.time()
-    
+
     job_hash = job_dict["job_hash"]
     nwb_name = job_dict["nwb_name"]
     analysis_args = job_dict["analysis_spec"]["analysis_args"]
@@ -37,7 +40,7 @@ def wrapper_main(job_dict, parallel_inside_job=False):
         autowater_offered,
         random_number,
     ) = get_history_from_nwb(f"/root/capsule/data/{session_id}.nwb")
-    
+
     # Remove NaNs
     ignored = np.isnan(choice_history)
     choice_history = choice_history[~ignored]
@@ -54,31 +57,20 @@ def wrapper_main(job_dict, parallel_inside_job=False):
        **analysis_args["fit_kwargs"],
     )
 
-    # Saving results
+    # -- Saving results --
+    # 1. Figure
     result_dir = f"/root/capsule/results/{job_hash}"
     os.makedirs(result_dir, exist_ok=True)
 
-    fig_fitting, axes = forager.plot_fitted_session(if_plot_latent=True)
-    fig_fitting.savefig(f"{result_dir}/fitted.png")
-
-    # %%
-    import s3fs
-    import pickle
-    from datetime import datetime
-
-    fs = s3fs.S3FileSystem(anon=False)
-    s3_results_root = "aind-behavior-data/foraging_nwb_bonsai_processed/v2"
-    with fs.open(f"{s3_results_root}/{job_hash}/fitted.png", "wb") as f:
-        fig_fitting.savefig(f)
-
-    # Save to pickle on s3
+    fig_fitting, _ = forager.plot_fitted_session(if_plot_latent=True)
+    upload_s3_fig(fig_fitting, job_hash, "fitted_session.png", if_save_local=True)
+ 
+    # 2. Fit results object
     # Have to flatten pydantic models in forager for pickle to work
     forager.ParamModel = forager.ParamModel.model_json_schema()
     forager.ParamFitBoundModel = forager.ParamFitBoundModel.schema_json()
     forager.params = forager.params.model_dump()
-
-    with fs.open(f"{s3_results_root}/{job_hash}/forager.pkl", "wb") as f:
-        pickle.dump(forager, f)
+    upload_s3_pkl(forager, job_hash, "forager.pkl", if_save_local=True)
 
     """
     # -- Reload from pickle --
@@ -95,31 +87,25 @@ def wrapper_main(job_dict, parallel_inside_job=False):
     forager.plot_fitted_session(if_plot_latent=True)
     """
 
-    # -- Insert key numbers to docDB --
-    # Prepare json
-
-    import pkg_resources
-    analysis_libs = {lib: pkg_resources.get_distribution(lib).version
-                     for lib in job_dict["analysis_spec"]["analysis_libs"]}
-        
+    # -- Prepare database record --
     analysis_results = forager.get_fitting_result_dict()
+
+    analysis_libs_to_track_ver = {
+        lib: pkg_resources.get_distribution(lib).version
+        for lib in job_dict["analysis_spec"]["analysis_libs_to_track_ver"]
+    }
 
     result_dict = {
         **job_dict,
         "analysis_datetime": datetime.now().isoformat(),
         "analysis_time_spent_in_sec": time.time() - start_time, 
-        "analysis_libs": analysis_libs,
+        "analysis_libs_to_track_ver": analysis_libs_to_track_ver,
         "analysis_results": analysis_results,
     }
-    
+
     # -- Insert to docDB via ssh --
-    from aind_data_access_api.document_db_ssh import DocumentDbSSHClient, DocumentDbSSHCredentials
-
-    credentials = DocumentDbSSHCredentials()
-    credentials.database = "behavior_analysis"
-    credentials.collection = "model_fitting"
-
-    with DocumentDbSSHClient(credentials=credentials) as doc_db_client:
-        response = doc_db_client.collection.insert_one(result_dict)
-        print(response.inserted_id)
-    
+    inserted = insert_docDB_ssh(result_dict, "mle_fitting")
+    if inserted:
+        logger.info(f"Inserted {job_hash} to docDB")
+    else:
+        logger.error(f"Failed to insert {job_hash} to docDB")

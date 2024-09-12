@@ -13,7 +13,7 @@ analysis_specs = [
     {
         "analysis_name": "MLE fitting",
         "analysis_ver": "first version @ 0.10.0",
-        "analysis_libs": ["aind_dynamic_foraging_models"],
+        "analysis_libs_to_track_ver": ["aind_dynamic_foraging_models"],
         "analysis_args": {
             "agent_class": "ForagerQLearning",
             "agent_kwargs": {
@@ -23,21 +23,21 @@ analysis_specs = [
                 "action_selection": "softmax",
             },
             "fit_kwargs": {
-                "DE_kwargs": {"workers": 1, "disp": False, "polish": False},
-                "k_fold_cross_validation": 2,
+                "DE_kwargs": {"polish": True},
+                "k_fold_cross_validation": 10,
             },
         },
     },
     {
         "analysis_name": "MLE fitting",
         "analysis_ver": "first version @ 0.10.0",
-        "analysis_libs": ["aind_dynamic_foraging_models"],
+        "analysis_libs_to_track_ver": ["aind_dynamic_foraging_models"],
         "analysis_args": {
             "agent_class": "ForagerLossCounting",
             "agent_kwargs": {"win_stay_lose_switch": True, "choice_kernel": "none"},
             "fit_kwargs": {
-                "DE_kwargs": {"workers": 1, "disp": False, "polish": False},
-                "k_fold_cross_validation": 2,
+                "DE_kwargs": {"polish": True},
+                "k_fold_cross_validation": 10,
             },
         },
     },

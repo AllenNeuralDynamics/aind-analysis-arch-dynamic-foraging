@@ -13,6 +13,7 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 ANALYSIS_MAPPER = {
+    # Mapping of analysis name to package name under analysis_wrappers
     "MLE fitting": "mle_fitting",
 }
 
@@ -20,7 +21,7 @@ def _run_one_job(job_file, parallel_inside_job):
     with open(job_file) as f:
         job_dict = json.load(f)
     
-    # Rounte to analysis function
+    # Get analysis function
     package_name = ANALYSIS_MAPPER[job_dict["analysis_spec"]["analysis_name"]]
     analysis_fun = importlib.import_module(f"analysis_wrappers.{package_name}").wrapper_main
     
