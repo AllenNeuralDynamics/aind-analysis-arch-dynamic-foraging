@@ -26,7 +26,13 @@ def _run_one_job(job_file, parallel_inside_job):
     analysis_fun = importlib.import_module(f"analysis_wrappers.{package_name}").wrapper_main
     
     # Trigger analysis
-    analysis_fun(job_dict, parallel_inside_job)
+    logger.info(f"\nRunning {job_dict['analysis_spec']['analysis_name']} for {job_dict['nwb_name']}")
+    logger.info(f"Job hash: {job_dict['job_hash']}")
+    try:
+        status = analysis_fun(job_dict, parallel_inside_job)
+        logger.info(f"Job {job_dict['job_hash']} completed with status: {status}")
+    except Exception as e:
+        logger.error(f"Job {job_dict['job_hash']} failed with error: {e}")
 
 
 def run(parallel_on_jobs=False):
@@ -42,14 +48,14 @@ def run(parallel_on_jobs=False):
 
     # For each job json, run the corresponding job using multiprocessing
     if parallel_on_jobs:
-        logger.info(f"Running {len(job_files)} jobs, parallel on jobs...")
+        logger.info(f"\n\nRunning {len(job_files)} jobs, parallel on jobs...")
         pool = mp.Pool(mp.cpu_count())
         results = [pool.apply_async(_run_one_job, args=(job_file, False)) for job_file in job_files]
         _ = [r.get() for r in results]
         pool.close()
         pool.join()
     else:
-        logger.info(f"Running {len(job_files)} jobs, serial on jobs...")
+        logger.info(f"\n\nRunning {len(job_files)} jobs, serial on jobs...")
         [_run_one_job(job_file, parallel_inside_job=True) for job_file in job_files]
 
 if __name__ == "__main__": 
@@ -64,7 +70,6 @@ if __name__ == "__main__":
     
     # return the data in the object and save in args
     args = parser.parse_args()
-    print(args)
 
     # retrive the arguments
     parallel_on_jobs = bool(int(args.parallel_on_jobs or "0"))  # Default 0

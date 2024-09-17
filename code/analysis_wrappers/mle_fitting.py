@@ -9,7 +9,7 @@ import multiprocessing as mp
 
 from utils.nwb_io import get_history_from_nwb
 from utils.docDB_io import insert_docDB_ssh
-from utils.aws_io import upload_s3_fig, upload_s3_pkl
+from utils.aws_io import upload_s3_fig, upload_s3_pkl, upload_s3_json
 from aind_dynamic_foraging_models.generative_model import ForagerCollection
 
 logger = logging.getLogger(__name__)
@@ -104,9 +104,14 @@ def wrapper_main(job_dict, parallel_inside_job=False):
         "analysis_results": analysis_results,
     }
 
+    # -- Insert to s3 --
+    uploaded = upload_s3_json(result_dict, job_hash, "results.json", if_save_local=True)
+    
     # -- Insert to docDB via ssh --
     inserted = insert_docDB_ssh(result_dict, "mle_fitting")
     if inserted:
         logger.info(f"Inserted {job_hash} to docDB")
     else:
         logger.error(f"Failed to insert {job_hash} to docDB")
+
+    return "success"
