@@ -22,7 +22,8 @@ from utils.aws_io import (
 
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    handlers=[logging.FileHandler('../results/run.log')])
+                    handlers=[logging.FileHandler('../results/run.log'),
+                              logging.StreamHandler()])
 logger = logging.getLogger()  # Use root logger to capture all logs (including logs from imported modules)
 
 ANALYSIS_MAPPER = {
