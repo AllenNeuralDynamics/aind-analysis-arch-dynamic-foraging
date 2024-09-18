@@ -4,7 +4,7 @@ import json
 import logging
 
 S3_RESULTS_ROOT = "aind-behavior-data/foraging_nwb_bonsai_processed/v2"
-LOCAL_RESULTS_ROOT = "/root/capsule/results"
+LOCAL_RESULTS_ROOT = "../results"
 
 fs = s3fs.S3FileSystem(anon=False)
 

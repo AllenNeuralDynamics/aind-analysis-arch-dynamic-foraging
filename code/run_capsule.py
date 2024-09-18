@@ -22,7 +22,7 @@ from utils.aws_io import (
 
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    handlers=[logging.FileHandler('/root/capsule/results/run.log')])
+                    handlers=[logging.FileHandler('../results/run.log')])
 logger = logging.getLogger()  # Use root logger to capture all logs (including logs from imported modules)
 
 ANALYSIS_MAPPER = {
@@ -136,7 +136,7 @@ def run(parallel_on_jobs=False):
         else, process each job sequentially, but go parallel inside each job (e.g., DE workers)
     """
     # Discover all job json in /root/capsule/data
-    job_files = glob.glob("/root/capsule/data/*.json")
+    job_files = glob.glob("../data/*.json")
 
     # For each job json, run the corresponding job using multiprocessing
     if parallel_on_jobs:
