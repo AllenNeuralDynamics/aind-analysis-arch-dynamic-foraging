@@ -3,12 +3,27 @@
 import numpy as np
 from pynwb import NWBHDF5IO
 
+def get_nwb(session_id):
+    """Get NWB file from session_id.
 
-def get_history_from_nwb(nwb_file_name):
-    """Get choice and reward history from nwb file"""
+    Overwrite this function to get NWB file from other places.
 
-    io = NWBHDF5IO(nwb_file_name, mode="r")
+    Parameters
+    ----------
+    session_id : _type_
+        _description_
+    """
+    io = NWBHDF5IO(f"/root/capsule/data/foraging_nwb_bonsai/{session_id}.nwb", mode="r")
     nwb = io.read()
+    return nwb
+
+
+def get_history_from_nwb(nwb):
+    """Get choice and reward history from nwb file
+    
+    #TODO move this to aind-behavior-nwb-util
+    """
+
     df_trial = nwb.trials.to_dataframe()
 
     autowater_offered = (df_trial.auto_waterL == 1) | (df_trial.auto_waterR == 1)
