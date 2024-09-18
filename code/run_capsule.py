@@ -25,6 +25,9 @@ def _run_one_job(job_file, parallel_inside_job):
     with open(job_file) as f:
         job_dict = json.load(f)
 
+    # Update status to "running" in job manager DB
+    update_job_manager(job_hash=job_dict["job_hash"], update_dict={"status": "running"})
+
     # Get analysis function
     package_name = ANALYSIS_MAPPER[job_dict["analysis_spec"]["analysis_name"]]
     analysis_fun = importlib.import_module(f"analysis_wrappers.{package_name}").wrapper_main
@@ -36,21 +39,25 @@ def _run_one_job(job_file, parallel_inside_job):
     try:
         result = capture_logs(logger)(analysis_fun)(job_dict, parallel_inside_job)
         docDB_status, log = result["result"], result["logs"]
-        logger.info(f"Job {job_dict['job_hash']} completed with status: {docDB_status['status']}")
+        logger.info(
+            f"Job {job_dict['job_hash']} completed with status: {docDB_status['status']}"
+        )
 
         # Update job manager DB
-        update_job_manager(job_dict["job_hash"], docDB_status, log)
+        update_job_manager(
+            job_dict["job_hash"], update_dict={**docDB_status, "log": log}
+        )
     except Exception as e:  # Unhandled exception
         logger.error(f"Job {job_dict['job_hash']} failed with unhandled exception: {e}")
         logger.error(traceback.format_exc())  # Logs the full traceback
         update_job_manager(
             job_dict["job_hash"],
-            {
+            update_dict={
                 "status": "failed due to unhandled exception",
                 "docDB_id": None,
                 "collection_name": None,
+                "log": log,
             },
-            log,
         )
 
 

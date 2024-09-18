@@ -38,7 +38,7 @@ def insert_result_to_docDB_ssh(result_dict, collection_name) -> int:
         return {"status": "success", "docDB_id": response.inserted_id, "collection_name": collection_name}
     
     
-def update_job_manager(job_hash, docDB_status, log):
+def update_job_manager(job_hash, update_dict):
     """_summary_
 
     Parameters
@@ -51,7 +51,6 @@ def update_job_manager(job_hash, docDB_status, log):
         _description_
     """
     credentials.collection = "job_manager"
-    status, docDB_id = docDB_status["status"], docDB_status["docDB_id"]
     
     with DocumentDbSSHClient(credentials=credentials) as doc_db_client:
         # Check if job hash already exists, if yes, log warning, but still insert
@@ -62,5 +61,5 @@ def update_job_manager(job_hash, docDB_status, log):
         # Update job status and log
         response = doc_db_client.collection.update_one(
             {"job_hash": job_hash},
-            {"$set": {**docDB_status, "log": log}},
+            {"$set": update_dict},
         )
