@@ -6,7 +6,7 @@ credentials.database = "behavior_analysis"
 
 logger = logging.getLogger(__name__)
 
-def insert_result_to_docDB_ssh(result_dict, collection_name) -> int:
+def insert_result_to_docDB_ssh(result_dict, collection_name) -> dict:
     """_summary_
 
     Parameters
@@ -18,8 +18,8 @@ def insert_result_to_docDB_ssh(result_dict, collection_name) -> int:
 
     Returns
     -------
-    integer
-        inserted_id
+    dict
+        docDB upload status
     """
     credentials.collection = collection_name
     
