@@ -27,12 +27,13 @@ def insert_result_to_docDB_ssh(result_dict, collection_name) -> int:
         # Check if job hash already exists, if yes, log warning, but still insert
         if doc_db_client.collection.find_one({"job_hash": result_dict["job_hash"]}):
             logger.warning(f"Job hash {result_dict['job_hash']} already exists in {collection_name} in docDB")
-        # Insert
+        # Insert (this will add _id automatically to result_dict)
         response = doc_db_client.collection.insert_one(result_dict)
+        result_dict["_id"] = str(result_dict["_id"])
         
     if response.acknowledged is False:
         logger.error(f"Failed to insert {result_dict['job_hash']} to {collection_name} in docDB")
-        return {"status": "docDB insertion failed", "docDB_id": None}
+        return {"status": "docDB insertion failed", "docDB_id": None, "collection_name": None}
     else:
         logger.info(f"Inserted {response.inserted_id} to {collection_name} in docDB")
         return {"status": "success", "docDB_id": response.inserted_id, "collection_name": collection_name}
