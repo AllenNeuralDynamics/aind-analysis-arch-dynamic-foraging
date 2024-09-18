@@ -4,13 +4,17 @@ import json
 import glob
 import logging
 import importlib
+import traceback
 
 import multiprocessing as mp
+
+from utils.capture_logs import capture_logs
+from utils.docDB_io import update_job_manager
 
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     handlers=[logging.FileHandler('run.log')])
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()  # Use root logger to capture all logs (including logs from imported modules)
 
 ANALYSIS_MAPPER = {
     # Mapping of analysis name to package name under analysis_wrappers
@@ -20,13 +24,41 @@ ANALYSIS_MAPPER = {
 def _run_one_job(job_file, parallel_inside_job):
     with open(job_file) as f:
         job_dict = json.load(f)
-    
+
+    # Update status to "running" in job manager DB
+    update_job_manager(job_hash=job_dict["job_hash"], update_dict={"status": "running"})
+
     # Get analysis function
     package_name = ANALYSIS_MAPPER[job_dict["analysis_spec"]["analysis_name"]]
     analysis_fun = importlib.import_module(f"analysis_wrappers.{package_name}").wrapper_main
-    
-    # Trigger analysis
-    analysis_fun(job_dict, parallel_inside_job)
+
+    # Trigger analysis and update job manager
+    logger.info("")
+    logger.info(f"Running {job_dict['analysis_spec']['analysis_name']} for {job_dict['nwb_name']}")
+    logger.info(f"Job hash: {job_dict['job_hash']}")
+    try:
+        result = capture_logs(logger)(analysis_fun)(job_dict, parallel_inside_job)
+        docDB_status, log = result["result"], result["logs"]
+        logger.info(
+            f"Job {job_dict['job_hash']} completed with status: {docDB_status['status']}"
+        )
+
+        # Update job manager DB
+        update_job_manager(
+            job_dict["job_hash"], update_dict={**docDB_status, "log": log}
+        )
+    except Exception as e:  # Unhandled exception
+        logger.error(f"Job {job_dict['job_hash']} failed with unhandled exception: {e}")
+        logger.error(traceback.format_exc())  # Logs the full traceback
+        update_job_manager(
+            job_dict["job_hash"],
+            update_dict={
+                "status": "failed due to unhandled exception",
+                "docDB_id": None,
+                "collection_name": None,
+                "log": log,
+            },
+        )
 
 
 def run(parallel_on_jobs=False):
@@ -42,14 +74,14 @@ def run(parallel_on_jobs=False):
 
     # For each job json, run the corresponding job using multiprocessing
     if parallel_on_jobs:
-        logger.info(f"Running {len(job_files)} jobs, parallel on jobs...")
+        logger.info(f"\n\nRunning {len(job_files)} jobs, parallel on jobs...")
         pool = mp.Pool(mp.cpu_count())
         results = [pool.apply_async(_run_one_job, args=(job_file, False)) for job_file in job_files]
         _ = [r.get() for r in results]
         pool.close()
         pool.join()
     else:
-        logger.info(f"Running {len(job_files)} jobs, serial on jobs...")
+        logger.info(f"\n\nRunning {len(job_files)} jobs, serial on jobs...")
         [_run_one_job(job_file, parallel_inside_job=True) for job_file in job_files]
 
 if __name__ == "__main__": 
@@ -64,7 +96,6 @@ if __name__ == "__main__":
     
     # return the data in the object and save in args
     args = parser.parse_args()
-    print(args)
 
     # retrive the arguments
     parallel_on_jobs = bool(int(args.parallel_on_jobs or "0"))  # Default 0

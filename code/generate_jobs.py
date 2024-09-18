@@ -23,7 +23,7 @@ analysis_specs = [
                 "action_selection": "softmax",
             },
             "fit_kwargs": {
-                "DE_kwargs": {"polish": True},
+                "DE_kwargs": {"polish": True, "seed": 42},
                 "k_fold_cross_validation": 2,
             },
         },
@@ -36,7 +36,7 @@ analysis_specs = [
             "agent_class": "ForagerLossCounting",
             "agent_kwargs": {"win_stay_lose_switch": True, "choice_kernel": "none"},
             "fit_kwargs": {
-                "DE_kwargs": {"polish": True},
+                "DE_kwargs": {"polish": True, "seed": 42},
                 "k_fold_cross_validation": 2,
             },
         },
