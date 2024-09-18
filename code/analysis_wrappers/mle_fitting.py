@@ -14,8 +14,30 @@ from aind_dynamic_foraging_models.generative_model import ForagerCollection
 
 logger = logging.getLogger(__name__)
 
-def wrapper_main(job_dict, parallel_inside_job=False):
-    """Main entrance of this analysis"""
+def wrapper_main(job_dict, parallel_inside_job=False) -> dict:
+    """Main entrance of this analysis
+    Note that the function name should be wrapper_main()
+    The job dispatcher will look for this function (by file name) to trigger the analysis.
+    
+    Parameters
+    ----------
+    job_dict : dict
+        Dictionary containing job information (nwb and analysis_spec)
+    parallel_inside_job : bool, optional
+        Whether to run parallel computation inside the job, by default False
+        If false, DE_workers will be set to 1.
+        
+    Returns
+    -------
+    dict
+        Dictionary containing the result of the analysis.
+        Required fields:
+            "status": str, "success" or others
+            "upload_figs_s3": dict, figures to upload to s3, {"file_name": fig object}
+            "upload_pkls_s3": dict, pkl files to upload to s3, {"pkl_name": pkl object}
+            "upload_record_docDB": dict, bson-compatible record to upload to docDB
+    TODO: use pydantic to validate the input and output
+    """
     start_time = time.time()
 
     job_hash = job_dict["job_hash"]
@@ -59,19 +81,25 @@ def wrapper_main(job_dict, parallel_inside_job=False):
     )
 
     # -- Saving results --
+    upload_figs_s3 = []
+    upload_pkls_s3 = []
+    
     # 1. Figure
     result_dir = f"/root/capsule/results/{job_hash}"
     os.makedirs(result_dir, exist_ok=True)
 
     fig_fitting, _ = forager.plot_fitted_session(if_plot_latent=True)
-    upload_s3_fig(fig_fitting, job_hash, "fitted_session.png", if_save_local=True)
+    upload_figs_s3.append({"fitted_session.png": fig_fitting})
+    
  
     # 2. Fit results object
     # Have to flatten pydantic models in forager for pickle to work
     forager.ParamModel = forager.ParamModel.model_json_schema()
     forager.ParamFitBoundModel = forager.ParamFitBoundModel.schema_json()
     forager.params = forager.params.model_dump()
-    upload_s3_pkl(forager, job_hash, "forager.pkl", if_save_local=True)
+    upload_pkls_s3.append({"forager.pkl": forager})
+    
+    # upload_s3_pkl(forager, job_hash, "forager.pkl", if_save_local=True)
 
     """
     # -- Reload from pickle --
@@ -96,7 +124,7 @@ def wrapper_main(job_dict, parallel_inside_job=False):
         for lib in job_dict["analysis_spec"]["analysis_libs_to_track_ver"]
     }
 
-    result_dict = {
+    upload_record_docDB = {
         **job_dict,
         "analysis_datetime": datetime.now().isoformat(),
         "analysis_time_spent_in_sec": time.time() - start_time, 
@@ -105,8 +133,13 @@ def wrapper_main(job_dict, parallel_inside_job=False):
     }
 
     # -- Insert to s3 --
-    uploaded = upload_s3_json(result_dict, job_hash, "results.json", if_save_local=True)
+    # uploaded = upload_s3_json(result_dict, job_hash, "results.json", if_save_local=True)
     
     # -- Insert to docDB via ssh --
-    docDB_status = insert_result_to_docDB_ssh(result_dict, "mle_fitting")
-    return docDB_status
+    # docDB_status = insert_result_to_docDB_ssh(result_dict, "mle_fitting")
+    return {
+        "status": "success",
+        "upload_figs_s3": upload_figs_s3,
+        "upload_pkls_s3": upload_pkls_s3,
+        "upload_record_docDB": upload_record_docDB,
+    }
