@@ -35,4 +35,32 @@ def insert_result_to_docDB_ssh(result_dict, collection_name) -> int:
         return {"status": "docDB insertion failed", "docDB_id": None}
     else:
         logger.info(f"Inserted {response.inserted_id} to {collection_name} in docDB")
-        return {"status": "success", "docDB_id": response.inserted_id}
+        return {"status": "success", "docDB_id": response.inserted_id, "collection_name": collection_name}
+    
+    
+def update_job_manager(job_hash, docDB_status, log):
+    """_summary_
+
+    Parameters
+    ----------
+    job_hash : _type_
+        _description_
+    status : _type_
+        _description_
+    log : _type_
+        _description_
+    """
+    credentials.collection = "job_manager"
+    status, docDB_id = docDB_status["status"], docDB_status["docDB_id"]
+    
+    with DocumentDbSSHClient(credentials=credentials) as doc_db_client:
+        # Check if job hash already exists, if yes, log warning, but still insert
+        if not doc_db_client.collection.find_one({"job_hash": job_hash}):
+            logger.warning(f"Job hash {job_hash} does not exist in job_manager in docDB! Skipping update.")
+            return
+        
+        # Update job status and log
+        response = doc_db_client.collection.update_one(
+            {"job_hash": job_hash},
+            {"$set": {**docDB_status, "log": log}},
+        )

@@ -4,10 +4,12 @@ import json
 import glob
 import logging
 import importlib
+import traceback
 
 import multiprocessing as mp
 
 from utils.capture_logs import capture_logs
+from utils.docDB_io import update_job_manager
 
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -22,24 +24,34 @@ ANALYSIS_MAPPER = {
 def _run_one_job(job_file, parallel_inside_job):
     with open(job_file) as f:
         job_dict = json.load(f)
-    
+
     # Get analysis function
     package_name = ANALYSIS_MAPPER[job_dict["analysis_spec"]["analysis_name"]]
     analysis_fun = importlib.import_module(f"analysis_wrappers.{package_name}").wrapper_main
-    
-    # Trigger analysis
+
+    # Trigger analysis and update job manager
     logger.info("")
     logger.info(f"Running {job_dict['analysis_spec']['analysis_name']} for {job_dict['nwb_name']}")
     logger.info(f"Job hash: {job_dict['job_hash']}")
     try:
         result = capture_logs(logger)(analysis_fun)(job_dict, parallel_inside_job)
         docDB_status, log = result["result"], result["logs"]
-        logger.info(f"Job {job_dict['job_hash']} completed with status: {status}")
-        
-        # Update job manager
-        
+        logger.info(f"Job {job_dict['job_hash']} completed with status: {docDB_status['status']}")
+
+        # Update job manager DB
+        update_job_manager(job_dict["job_hash"], docDB_status, log)
     except Exception as e:  # Unhandled exception
         logger.error(f"Job {job_dict['job_hash']} failed with unhandled exception: {e}")
+        logger.error(traceback.format_exc())  # Logs the full traceback
+        update_job_manager(
+            job_dict["job_hash"],
+            {
+                "status": "failed due to unhandled exception",
+                "docDB_id": None,
+                "collection_name": None,
+            },
+            log,
+        )
 
 
 def run(parallel_on_jobs=False):

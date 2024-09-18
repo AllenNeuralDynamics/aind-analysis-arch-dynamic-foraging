@@ -2,6 +2,7 @@ import logging
 from io import StringIO
 import json
 from functools import wraps
+import traceback
 
 # Decorator to capture logs during function execution
 def capture_logs(logger):
@@ -23,6 +24,9 @@ def capture_logs(logger):
             # Run the function while capturing logs
             try:
                 result = func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"Failed with exception: {e}")
+                logger.error(traceback.format_exc())  # Logs the full traceback
             finally:
                 # Remove the handler and clean up
                 logger.removeHandler(ch)
