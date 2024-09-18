@@ -150,6 +150,7 @@ def run(parallel_on_jobs=False):
     else:
         logger.info(f"\n\nRunning {len(job_files)} jobs, serial on jobs...")
         [_run_one_job(job_file, parallel_inside_job=True) for job_file in job_files]
+    logger.info(f"All done!")
 
 if __name__ == "__main__": 
 
