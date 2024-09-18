@@ -7,7 +7,7 @@ from datetime import datetime
 import numpy as np
 import multiprocessing as mp
 
-from utils.nwb_io import get_history_from_nwb
+from utils.nwb_io import get_nwb, get_history_from_nwb
 from aind_dynamic_foraging_models.generative_model import ForagerCollection
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ def wrapper_main(job_dict, parallel_inside_job=False) -> dict:
 
     # -- Load data --
     session_id = job_dict["nwb_name"].replace(".nwb", "")
-
+    nwb = get_nwb(session_id=session_id)
     (
         baiting,
         choice_history,
@@ -60,7 +60,7 @@ def wrapper_main(job_dict, parallel_inside_job=False) -> dict:
         _,
         autowater_offered,
         random_number,
-    ) = get_history_from_nwb(f"/root/capsule/data/foraging_nwb_bonsai/{session_id}.nwb")
+    ) = get_history_from_nwb(nwb)
 
     # Remove NaNs
     ignored = np.isnan(choice_history)

@@ -88,10 +88,11 @@ def _run_one_job(job_file, parallel_inside_job):
     analysis_fun = importlib.import_module(f"analysis_wrappers.{package_name}").wrapper_main
 
     try:
-        # -- Trigger analysis and update job manager --
+        # -- Trigger analysis --
         logger.info("")
         logger.info(f"Running {job_dict['analysis_spec']['analysis_name']} for {job_dict['nwb_name']}")
         logger.info(f"Job hash: {job_hash}")
+        
         analysis_results = capture_logs(logger)(analysis_fun)(job_dict, parallel_inside_job)
         results, log = analysis_results["result"], analysis_results["logs"]
         logger.info(
@@ -101,10 +102,7 @@ def _run_one_job(job_file, parallel_inside_job):
         # -- Upload results --
         upload_status = upload_results(job_hash, results)
         
-        # Copy job json to results folder
-        os.system(f"cp {job_file} /root/capsule/results/{job_hash}/job.json")
-
-        # Update job manager DB with log and status
+        # -- Update job manager DB with log and status --
         update_job_manager(
             job_hash,
             update_dict={
