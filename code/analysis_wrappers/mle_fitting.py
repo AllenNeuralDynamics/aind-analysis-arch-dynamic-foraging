@@ -8,8 +8,6 @@ import numpy as np
 import multiprocessing as mp
 
 from utils.nwb_io import get_history_from_nwb
-from utils.docDB_io import insert_result_to_docDB_ssh
-from utils.aws_io import upload_s3_fig, upload_s3_pkl, upload_s3_json
 from aind_dynamic_foraging_models.generative_model import ForagerCollection
 
 logger = logging.getLogger(__name__)
@@ -81,42 +79,24 @@ def wrapper_main(job_dict, parallel_inside_job=False) -> dict:
     )
 
     # -- Saving results --
-    upload_figs_s3 = []
-    upload_pkls_s3 = []
+    upload_figs_s3 = {}
+    upload_pkls_s3 = {}
     
     # 1. Figure
     result_dir = f"/root/capsule/results/{job_hash}"
     os.makedirs(result_dir, exist_ok=True)
 
     fig_fitting, _ = forager.plot_fitted_session(if_plot_latent=True)
-    upload_figs_s3.append({"fitted_session.png": fig_fitting})
-    
+    upload_figs_s3["fitted_session.png"] = fig_fitting
  
     # 2. Fit results object
     # Have to flatten pydantic models in forager for pickle to work
     forager.ParamModel = forager.ParamModel.model_json_schema()
     forager.ParamFitBoundModel = forager.ParamFitBoundModel.schema_json()
     forager.params = forager.params.model_dump()
-    upload_pkls_s3.append({"forager.pkl": forager})
-    
-    # upload_s3_pkl(forager, job_hash, "forager.pkl", if_save_local=True)
+    upload_pkls_s3["forager.pkl"] = forager
 
-    """
-    # -- Reload from pickle --
-    with fs.open(f"{s3_results_root}/{job_hash}/forager.pkl", "rb") as f:
-        forager_reloaded = pickle.load(f)
-        
-    # Recover pydantic models if needed
-    forager_tmp = forager_reloaded.__class__(**forager_reloaded.agent_kwargs)
-    forager_reloaded.ParamModel = forager_tmp.ParamModel
-    forager_reloaded.ParamFitBoundModel = forager_tmp.ParamFitBoundModel
-    forager.params = forager_reloaded.ParamModel(**forager.params)
-    
-    # Test
-    forager.plot_fitted_session(if_plot_latent=True)
-    """
-
-    # -- Prepare database record --
+    # 3. Database record --
     analysis_results = forager.get_fitting_result_dict()
 
     analysis_libs_to_track_ver = {
@@ -132,11 +112,6 @@ def wrapper_main(job_dict, parallel_inside_job=False) -> dict:
         "analysis_results": analysis_results,
     }
 
-    # -- Insert to s3 --
-    # uploaded = upload_s3_json(result_dict, job_hash, "results.json", if_save_local=True)
-    
-    # -- Insert to docDB via ssh --
-    # docDB_status = insert_result_to_docDB_ssh(result_dict, "mle_fitting")
     return {
         "status": "success",
         "upload_figs_s3": upload_figs_s3,

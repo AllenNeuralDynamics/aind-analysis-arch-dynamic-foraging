@@ -3,7 +3,8 @@ import pickle
 import json
 import logging
 
-from run_capsule import S3_RESULTS_ROOT, LOCAL_RESULTS_ROOT
+S3_RESULTS_ROOT = "aind-behavior-data/foraging_nwb_bonsai_processed/v2"
+LOCAL_RESULTS_ROOT = "/root/capsule/results"
 
 fs = s3fs.S3FileSystem(anon=False)
 
@@ -27,13 +28,28 @@ def upload_s3_pkl(job_hash, filename, obj, if_save_local=True):
         with open(f"{LOCAL_RESULTS_ROOT}/{job_hash}/{filename}", "wb") as f:
             pickle.dump(obj, f)
             logger.info(f"Saved {filename} locally")
+        
+    """
+    # -- Reload from pickle to recover forager.pkl --
+    with fs.open(f"{s3_results_root}/{job_hash}/forager.pkl", "rb") as f:
+        forager_reloaded = pickle.load(f)
+        
+    # Recover pydantic models if needed
+    forager_tmp = forager_reloaded.__class__(**forager_reloaded.agent_kwargs)
+    forager_reloaded.ParamModel = forager_tmp.ParamModel
+    forager_reloaded.ParamFitBoundModel = forager_tmp.ParamFitBoundModel
+    forager.params = forager_reloaded.ParamModel(**forager.params)
+    
+    # Test
+    forager.plot_fitted_session(if_plot_latent=True)
+    """
 
-def upload_s3_json(job_hash, filename, obj, if_save_local=True):
+def upload_s3_json(job_hash, filename, dict, if_save_local=True):
     with fs.open(f"{S3_RESULTS_ROOT}/{job_hash}/{filename}", "w") as f:
-        json.dump(obj, f, indent=4)
+        json.dump(dict, f, indent=4)
         logger.info(f"Uploaded {filename} to S3")
         
     if if_save_local:
         with open(f"{LOCAL_RESULTS_ROOT}/{job_hash}/{filename}", "w") as f:
-            json.dump(obj, f, indent=4)
+            json.dump(dict, f, indent=4)
             logger.info(f"Saved {filename} locally")
