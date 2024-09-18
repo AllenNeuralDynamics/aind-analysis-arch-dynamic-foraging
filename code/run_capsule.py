@@ -32,10 +32,14 @@ def _run_one_job(job_file, parallel_inside_job):
     logger.info(f"Running {job_dict['analysis_spec']['analysis_name']} for {job_dict['nwb_name']}")
     logger.info(f"Job hash: {job_dict['job_hash']}")
     try:
-        status = capture_logs(logger)(analysis_fun)(job_dict, parallel_inside_job)
+        result = capture_logs(logger)(analysis_fun)(job_dict, parallel_inside_job)
+        docDB_status, log = result["result"], result["logs"]
         logger.info(f"Job {job_dict['job_hash']} completed with status: {status}")
-    except Exception as e:
-        logger.error(f"Job {job_dict['job_hash']} failed with error: {e}")
+        
+        # Update job manager
+        
+    except Exception as e:  # Unhandled exception
+        logger.error(f"Job {job_dict['job_hash']} failed with unhandled exception: {e}")
 
 
 def run(parallel_on_jobs=False):
