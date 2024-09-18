@@ -108,10 +108,7 @@ def wrapper_main(job_dict, parallel_inside_job=False):
     uploaded = upload_s3_json(result_dict, job_hash, "results.json", if_save_local=True)
     
     # -- Insert to docDB via ssh --
-    inserted = insert_docDB_ssh(result_dict, "mle_fitting")
-    if inserted:
-        logger.info(f"Inserted {job_hash} to docDB")
-    else:
-        logger.error(f"Failed to insert {job_hash} to docDB")
+    status = insert_docDB_ssh(result_dict, "mle_fitting")
+
 
     return "success"

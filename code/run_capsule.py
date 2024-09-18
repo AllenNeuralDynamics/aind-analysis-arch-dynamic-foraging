@@ -7,10 +7,12 @@ import importlib
 
 import multiprocessing as mp
 
+from utils.capture_logs import capture_logs
+
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     handlers=[logging.FileHandler('run.log')])
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()  # Use root logger to capture all logs (including logs from imported modules)
 
 ANALYSIS_MAPPER = {
     # Mapping of analysis name to package name under analysis_wrappers
@@ -26,10 +28,11 @@ def _run_one_job(job_file, parallel_inside_job):
     analysis_fun = importlib.import_module(f"analysis_wrappers.{package_name}").wrapper_main
     
     # Trigger analysis
-    logger.info(f"\nRunning {job_dict['analysis_spec']['analysis_name']} for {job_dict['nwb_name']}")
+    logger.info("")
+    logger.info(f"Running {job_dict['analysis_spec']['analysis_name']} for {job_dict['nwb_name']}")
     logger.info(f"Job hash: {job_dict['job_hash']}")
     try:
-        status = analysis_fun(job_dict, parallel_inside_job)
+        status = capture_logs(logger)(analysis_fun)(job_dict, parallel_inside_job)
         logger.info(f"Job {job_dict['job_hash']} completed with status: {status}")
     except Exception as e:
         logger.error(f"Job {job_dict['job_hash']} failed with error: {e}")
