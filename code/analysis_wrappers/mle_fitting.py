@@ -67,6 +67,15 @@ def wrapper_main(job_dict, parallel_inside_job=False) -> dict:
     choice_history = choice_history[~ignored]
     reward_history = reward_history[~ignored].to_numpy()
 
+    # -- Skip if len(valid trials) < 50 --
+    if len(choice_history) < 50:
+        return {
+            "status": "skipped. valid trials < 50",
+            "upload_figs_s3": {},
+            "upload_pkls_s3": {},
+            "upload_record_docDB": {},
+        }
+
     # -- Initialize model --
     forager = ForagerCollection().get_forager(
        agent_class_name=analysis_args["agent_class"],
