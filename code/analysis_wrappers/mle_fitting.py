@@ -44,7 +44,7 @@ def wrapper_main(job_dict, parallel_inside_job=False) -> dict:
 
     # Overwrite DE_workers
     if parallel_inside_job:
-        analysis_args["fit_kwargs"]["DE_kwargs"]["workers"] = os.getenv("CO_CPUS")
+        analysis_args["fit_kwargs"]["DE_kwargs"]["workers"] = int(os.getenv("CO_CPUS"))
     else:
         analysis_args["fit_kwargs"]["DE_kwargs"]["workers"] = 1
 
