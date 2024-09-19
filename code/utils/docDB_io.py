@@ -24,9 +24,9 @@ def retry_on_ssh_timeout(max_retries=MAX_SSH_RETRIES, timeout=TIMEOUT):
             while retries < max_retries:
                 try:
                     return func(*args, **kwargs)
-                except ServerSelectionTimeoutError as e:
+                except Exception as e:
                     retries += 1
-                    logger.warning(f"ServerSelectionTimeoutError encountered. Retry {retries}/{max_retries}...")
+                    logger.warning(f"SSH error encountered. Retry {retries}/{max_retries}...")
                     if retries >= max_retries:
                         logger.error("Max retries reached. Raising exception.")
                         raise

@@ -75,10 +75,10 @@ def upload_results(job_hash, results):
                 result_dict=upload_record_docDB, 
                 collection_name="mle_fitting"
         )  # Note that this will add _id automatically to upload_record_docDB
-    except ServerSelectionTimeoutError as e:
+    except Exception as e:
         upload_status.update(
             {
-                "docDB_upload_status": "failed; too many ServerSelectionTimeoutErrors",
+                "docDB_upload_status": "failed; too many SSH Errors",
                 "docDB_id": None,
                 "collection_name": None,
             }
