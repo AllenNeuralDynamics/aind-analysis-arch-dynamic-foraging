@@ -19,10 +19,13 @@ from utils.aws_io import (
     LOCAL_RESULTS_ROOT,
 )
 
+# Get script directory
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    handlers=[logging.FileHandler('/root/capsule/results/run.log')])
+                    handlers=[logging.FileHandler(f'{SCRIPT_DIR}/../results/run.log'),
+                              logging.StreamHandler()])
 logger = logging.getLogger()  # Use root logger to capture all logs (including logs from imported modules)
 
 ANALYSIS_MAPPER = {
@@ -127,7 +130,7 @@ def _run_one_job(job_file, parallel_inside_job):
         )
 
 
-def run(parallel_on_jobs=False):
+def run(parallel_on_jobs=False, debug_mode=True):
     """
     Parameters
     -----
@@ -136,7 +139,10 @@ def run(parallel_on_jobs=False):
         else, process each job sequentially, but go parallel inside each job (e.g., DE workers)
     """
     # Discover all job json in /root/capsule/data
-    job_files = glob.glob("/root/capsule/data/*.json")
+    job_files = glob.glob(f"{SCRIPT_DIR}/../data/jobs/**/*.json", recursive=True)
+
+    if debug_mode:
+        job_files = job_files[:1]
 
     # For each job json, run the corresponding job using multiprocessing
     if parallel_on_jobs:
@@ -149,8 +155,14 @@ def run(parallel_on_jobs=False):
     else:
         logger.info(f"\n\nRunning {len(job_files)} jobs, serial on jobs...")
         [_run_one_job(job_file, parallel_inside_job=True) for job_file in job_files]
+    logger.info(f"All done!")
 
 if __name__ == "__main__": 
+
+    import os
+    print(os.getenv("AWS_ACCESS_KEY_ID"))
+    print(os.getenv("DOC_DB_SSH_PASSWORD"))
+    exit()
 
     import argparse
 
@@ -165,5 +177,6 @@ if __name__ == "__main__":
 
     # retrive the arguments
     parallel_on_jobs = bool(int(args.parallel_on_jobs or "0"))  # Default 0
-     
-    run(parallel_on_jobs=parallel_on_jobs)
+    debug_mode = args.parallel_on_jobs is None
+
+    run(parallel_on_jobs=parallel_on_jobs, debug_mode=debug_mode)

@@ -7,7 +7,7 @@ from datetime import datetime
 import numpy as np
 import multiprocessing as mp
 
-from utils.nwb_io import get_nwb, get_history_from_nwb
+from utils.nwb_io import get_nwb_from_s3, get_history_from_nwb
 from aind_dynamic_foraging_models.generative_model import ForagerCollection
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ def wrapper_main(job_dict, parallel_inside_job=False) -> dict:
 
     # Overwrite DE_workers
     if parallel_inside_job:
-        analysis_args["fit_kwargs"]["DE_kwargs"]["workers"] = mp.cpu_count()
+        analysis_args["fit_kwargs"]["DE_kwargs"]["workers"] = int(os.getenv("CO_CPUS"))
     else:
         analysis_args["fit_kwargs"]["DE_kwargs"]["workers"] = 1
 
@@ -52,7 +52,7 @@ def wrapper_main(job_dict, parallel_inside_job=False) -> dict:
 
     # -- Load data --
     session_id = job_dict["nwb_name"].replace(".nwb", "")
-    nwb = get_nwb(session_id=session_id)
+    nwb = get_nwb_from_s3(session_id=session_id)
     (
         baiting,
         choice_history,
