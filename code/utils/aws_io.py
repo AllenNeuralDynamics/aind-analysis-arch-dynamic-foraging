@@ -2,9 +2,11 @@ import s3fs
 import pickle
 import json
 import logging
+import os
 
 S3_RESULTS_ROOT = "aind-behavior-data/foraging_nwb_bonsai_processed/v2"
-LOCAL_RESULTS_ROOT = "../results"
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+LOCAL_RESULTS_ROOT = f"{SCRIPT_DIR}/../../results"
 
 fs = s3fs.S3FileSystem(anon=False)
 

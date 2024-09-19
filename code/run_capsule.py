@@ -19,10 +19,12 @@ from utils.aws_io import (
     LOCAL_RESULTS_ROOT,
 )
 
+# Get script directory
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 logging.basicConfig(level=logging.INFO, 
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    handlers=[logging.FileHandler('../results/run.log'),
+                    handlers=[logging.FileHandler(f'{SCRIPT_DIR}/../results/run.log'),
                               logging.StreamHandler()])
 logger = logging.getLogger()  # Use root logger to capture all logs (including logs from imported modules)
 
@@ -137,7 +139,7 @@ def run(parallel_on_jobs=False):
         else, process each job sequentially, but go parallel inside each job (e.g., DE workers)
     """
     # Discover all job json in /root/capsule/data
-    job_files = glob.glob("../data/jobs/**/*.json", recursive=True)
+    job_files = glob.glob(f"{SCRIPT_DIR}/../data/jobs/**/*.json", recursive=True)
 
     # For each job json, run the corresponding job using multiprocessing
     if parallel_on_jobs:
