@@ -101,6 +101,7 @@ def _run_one_job(job_file, parallel_inside_job):
         logger.info(
             f"Job {job_hash} completed with status: {results['status']}"
         )
+        print(f"Job {job_hash} completed with status: {results['status']}")  # Print to console of CO pipeline run
 
         # -- Upload results --
         upload_response = capture_logs(logger)(upload_results)(job_hash, results)
