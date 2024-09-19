@@ -168,15 +168,13 @@ if __name__ == "__main__":
     
     # add the corresponding parameters
     parser.add_argument('--parallel_on_jobs', dest='parallel_on_jobs')
+    parser.add_argument('--debug_mode', dest='debug_mode')
     
     # return the data in the object and save in args
     args = parser.parse_args()
 
     # retrive the arguments
     parallel_on_jobs = bool(int(args.parallel_on_jobs or "0"))  # Default 0
-
-    debug_mode = args.parallel_on_jobs is None
-    print(debug_mode)
-    exit()
+    debug_mode = bool(int(args.debug_mode or "1"))  # Default 1
 
     run(parallel_on_jobs=parallel_on_jobs, debug_mode=debug_mode)
