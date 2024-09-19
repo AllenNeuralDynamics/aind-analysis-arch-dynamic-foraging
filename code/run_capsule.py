@@ -103,7 +103,9 @@ def _run_one_job(job_file, parallel_inside_job):
         )
 
         # -- Upload results --
-        upload_status = upload_results(job_hash, results)
+        upload_response = capture_logs(logger)(upload_results)(job_hash, results)
+        upload_status, upload_log = upload_response["result"], upload_response["logs"]
+        log += upload_log  # Also add log during upload
         
         # -- Update job manager DB with log and status --
         update_job_manager(
