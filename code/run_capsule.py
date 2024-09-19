@@ -159,6 +159,11 @@ def run(parallel_on_jobs=False, debug_mode=True):
 
 if __name__ == "__main__": 
 
+    import os
+    print(os.getenv("AWS_ACCESS_KEY_ID"))
+    print(os.getenv("DOC_DB_SSH_PASSWORD"))
+    exit()
+
     import argparse
 
     # create a parser object
