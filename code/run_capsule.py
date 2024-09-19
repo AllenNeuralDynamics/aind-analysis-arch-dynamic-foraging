@@ -174,6 +174,9 @@ if __name__ == "__main__":
 
     # retrive the arguments
     parallel_on_jobs = bool(int(args.parallel_on_jobs or "0"))  # Default 0
-    debug_mode = args.parallel_on_jobs == ""
+
+    debug_mode = args.parallel_on_jobs is None
+    print(debug_mode)
+    exit()
 
     run(parallel_on_jobs=parallel_on_jobs, debug_mode=debug_mode)
