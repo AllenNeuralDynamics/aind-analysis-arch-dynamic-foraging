@@ -137,7 +137,7 @@ def run(parallel_on_jobs=False):
         else, process each job sequentially, but go parallel inside each job (e.g., DE workers)
     """
     # Discover all job json in /root/capsule/data
-    job_files = glob.glob("../data/**/*.json", recursive=True)
+    job_files = glob.glob("../data/jobs/**/*.json", recursive=True)
 
     # For each job json, run the corresponding job using multiprocessing
     if parallel_on_jobs:
