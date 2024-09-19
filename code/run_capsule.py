@@ -130,7 +130,7 @@ def _run_one_job(job_file, parallel_inside_job):
         )
 
 
-def run(parallel_on_jobs=False):
+def run(parallel_on_jobs=False, debug_mode=True):
     """
     Parameters
     -----
@@ -140,6 +140,9 @@ def run(parallel_on_jobs=False):
     """
     # Discover all job json in /root/capsule/data
     job_files = glob.glob(f"{SCRIPT_DIR}/../data/jobs/**/*.json", recursive=True)
+
+    if debug_mode:
+        job_files = job_files[:1]
 
     # For each job json, run the corresponding job using multiprocessing
     if parallel_on_jobs:
@@ -169,5 +172,6 @@ if __name__ == "__main__":
 
     # retrive the arguments
     parallel_on_jobs = bool(int(args.parallel_on_jobs or "0"))  # Default 0
-     
-    run(parallel_on_jobs=parallel_on_jobs)
+    debug_mode = args.parallel_on_jobs is None
+
+    run(parallel_on_jobs=parallel_on_jobs, debug_mode=debug_mode)
