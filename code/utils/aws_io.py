@@ -18,6 +18,7 @@ def upload_s3_fig(job_hash, filename, fig, if_save_local=True):
         logger.info(f"Uploaded {filename} to S3")
     
     if if_save_local:
+        os.makedirs(f"{LOCAL_RESULTS_ROOT}/{job_hash}", exist_ok=True)
         fig.savefig(f"{LOCAL_RESULTS_ROOT}/{job_hash}/{filename}")
         logger.info(f"Saved {filename} locally")
 
@@ -27,6 +28,7 @@ def upload_s3_pkl(job_hash, filename, obj, if_save_local=True):
         logger.info(f"Uploaded {filename} to S3")
         
     if if_save_local:
+        os.makedirs(f"{LOCAL_RESULTS_ROOT}/{job_hash}", exist_ok=True)
         with open(f"{LOCAL_RESULTS_ROOT}/{job_hash}/{filename}", "wb") as f:
             pickle.dump(obj, f)
             logger.info(f"Saved {filename} locally")
@@ -52,6 +54,7 @@ def upload_s3_json(job_hash, filename, dict, if_save_local=True):
         logger.info(f"Uploaded {filename} to S3")
         
     if if_save_local:
+        os.makedirs(f"{LOCAL_RESULTS_ROOT}/{job_hash}", exist_ok=True)
         with open(f"{LOCAL_RESULTS_ROOT}/{job_hash}/{filename}", "w") as f:
             json.dump(dict, f, indent=4)
             logger.info(f"Saved {filename} locally")
