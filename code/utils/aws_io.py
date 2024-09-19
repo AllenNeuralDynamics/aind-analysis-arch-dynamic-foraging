@@ -4,7 +4,7 @@ import json
 import logging
 import os
 
-S3_RESULTS_ROOT = "aind-behavior-data/foraging_nwb_bonsai_processed/v2"
+S3_RESULTS_ROOT = "aind-scratch-data/aind-dynamic-foraging-analysis"
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 LOCAL_RESULTS_ROOT = f"{SCRIPT_DIR}/../../results"
 
