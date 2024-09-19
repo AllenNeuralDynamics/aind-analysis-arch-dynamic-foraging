@@ -6,6 +6,7 @@ import logging
 import importlib
 import traceback
 import os
+from pymongo.errors import ServerSelectionTimeoutError
 
 import multiprocessing as mp
 
@@ -69,12 +70,22 @@ def upload_results(job_hash, results):
 
     # Upload record to docDB
     upload_record_docDB = results.get("upload_record_docDB", {})
-    upload_status.update(
-        insert_result_to_docDB_ssh(
-            result_dict=upload_record_docDB, 
-            collection_name="mle_fitting"
+    try:
+        upload_status_docDB = insert_result_to_docDB_ssh(
+                result_dict=upload_record_docDB, 
+                collection_name="mle_fitting"
+        )  # Note that this will add _id automatically to upload_record_docDB
+    except ServerSelectionTimeoutError as e:
+        upload_status.update(
+            {
+                "docDB_upload_status": "failed; too many ServerSelectionTimeoutErrors",
+                "docDB_id": None,
+                "collection_name": None,
+            }
         )
-    )  # Note that this will add _id automatically to upload_record_docDB
+        return upload_status
+        
+    upload_status.update(upload_status_docDB)  
     # Save a copy of docDB record to s3 and local
     upload_s3_json(
         job_hash=job_hash,
@@ -120,6 +131,7 @@ def _run_one_job(job_file, parallel_inside_job):
             job_hash,
             update_dict={
                 "status": results["status"],
+                "docDB_upload_status": upload_status["docDB_upload_status"],
                 "docDB_id": upload_status["docDB_id"],
                 "collection_name": upload_status["collection_name"],
                 "s3_location": upload_status["s3_location"],
