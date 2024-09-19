@@ -103,7 +103,9 @@ def _run_one_job(job_file, parallel_inside_job):
         )
 
         # -- Upload results --
-        upload_status = upload_results(job_hash, results)
+        upload_response = capture_logs(logger)(upload_results)(job_hash, results)
+        upload_status, upload_log = upload_response["result"], upload_response["logs"]
+        log += upload_log  # Also add log during upload
         
         # -- Update job manager DB with log and status --
         update_job_manager(
@@ -159,11 +161,6 @@ def run(parallel_on_jobs=False, debug_mode=True):
 
 if __name__ == "__main__": 
 
-    import os
-    print(os.getenv("AWS_ACCESS_KEY_ID"))
-    print(os.getenv("DOC_DB_SSH_PASSWORD"))
-    exit()
-
     import argparse
 
     # create a parser object
@@ -171,12 +168,13 @@ if __name__ == "__main__":
     
     # add the corresponding parameters
     parser.add_argument('--parallel_on_jobs', dest='parallel_on_jobs')
+    parser.add_argument('--debug_mode', dest='debug_mode')
     
     # return the data in the object and save in args
     args = parser.parse_args()
 
     # retrive the arguments
     parallel_on_jobs = bool(int(args.parallel_on_jobs or "0"))  # Default 0
-    debug_mode = args.parallel_on_jobs is None
+    debug_mode = bool(int(args.debug_mode or "1"))  # Default 1
 
     run(parallel_on_jobs=parallel_on_jobs, debug_mode=debug_mode)

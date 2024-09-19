@@ -22,6 +22,7 @@ def capture_logs(logger):
             logger.setLevel(logging.INFO)
 
             # Run the function while capturing logs
+            result = None
             try:
                 result = func(*args, **kwargs)
             except Exception as e:

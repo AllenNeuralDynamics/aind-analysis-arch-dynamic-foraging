@@ -1,11 +1,5 @@
 environment_version: 1
 credentials:
-- type: aws
-  id: hrZ8DknYAgaqPzC6
-  description: amazon
-  access_key_id: AWS_ACCESS_KEY_ID
-  secret_access_key: AWS_SECRET_ACCESS_KEY
-  region: AWS_DEFAULT_REGION
 - type: general
   id: UEQcqHQLHdarepvs
   description: DOC_DB_PASSWORD
@@ -30,3 +24,9 @@ credentials:
   id: jQ4tMAHxKYJvd7J2
   description: DOC_DB_SSH_USERNAME
   value: DOC_DB_SSH_USERNAME
+- type: aws
+  id: 0d5EBZeeeR0B1H8A
+  description: AWS Assumable Role - aind-codeocean-user
+  access_key_id: AWS_ACCESS_KEY_ID
+  secret_access_key: AWS_SECRET_ACCESS_KEY
+  region: AWS_DEFAULT_REGION
