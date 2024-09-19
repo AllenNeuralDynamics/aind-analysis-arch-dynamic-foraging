@@ -50,6 +50,13 @@ def upload_results(job_hash, results):
         "upload_record_docDB": dict, bson-compatible record to upload to docDB
 
     """
+    if "skipped" in results["status"]:
+        return {
+            "docDB_id": None,
+            "collection_name": None,
+            "s3_location": None,
+        }
+
     # Upload figures
     for fig_name, fig in results.get("upload_figs_s3", {}).items():
         upload_s3_fig(job_hash, fig_name, fig, if_save_local=True)
