@@ -102,9 +102,6 @@ def _run_one_job(job_file, parallel_inside_job):
 
     job_hash = job_dict["job_hash"]
 
-    # Update status to "running" in job manager DB
-    update_job_manager(job_hash=job_hash, update_dict={"status": "running"})
-
     # Get analysis function
     package_name = ANALYSIS_MAPPER[job_dict["analysis_spec"]["analysis_name"]]
     analysis_fun = importlib.import_module(f"analysis_wrappers.{package_name}").wrapper_main
@@ -114,6 +111,9 @@ def _run_one_job(job_file, parallel_inside_job):
         logger.info("")
         logger.info(f"Running {job_dict['analysis_spec']['analysis_name']} for {job_dict['nwb_name']}")
         logger.info(f"Job hash: {job_hash}")
+        
+        # Update status to "running" in job manager DB
+        update_job_manager(job_hash=job_hash, update_dict={"status": "running"})
         
         analysis_results = capture_logs(logger)(analysis_fun)(job_dict, parallel_inside_job)
         results, log = analysis_results["result"], analysis_results["logs"]
