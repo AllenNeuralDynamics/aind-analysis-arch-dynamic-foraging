@@ -141,15 +141,20 @@ def _run_one_job(job_file, parallel_inside_job):
     except Exception as e:  # Unhandled exception
         logger.error(f"Job {job_hash} failed with unhandled exception: {e}")
         logger.error(traceback.format_exc())  # Logs the full traceback
-        update_job_manager(
-            job_hash,
-            update_dict={
-                "status": "failed due to unhandled exception",
-                "docDB_id": None,
-                "collection_name": None,
-                "log": log,
-            },
-        )
+        print(traceback.format_exc())  # For CO console
+
+        try:
+            update_job_manager(
+                job_hash,
+                update_dict={
+                    "status": "failed due to unhandled exception (see log)",
+                    "docDB_id": None,
+                    "collection_name": None,
+                    "log": log,
+                },
+            )
+        except:
+            logger.error("'Failed' message failed to upload...")
 
 
 def run(parallel_on_jobs=False, debug_mode=True):
