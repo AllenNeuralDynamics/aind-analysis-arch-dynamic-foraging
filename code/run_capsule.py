@@ -54,6 +54,7 @@ def upload_results(job_hash, results):
     if "skipped" in results["status"]:
         return {
             "docDB_id": None,
+            "docDB_upload_status": None,
             "collection_name": None,
             "s3_location": None,
         }
