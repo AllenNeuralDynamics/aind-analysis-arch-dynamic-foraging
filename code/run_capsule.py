@@ -176,9 +176,9 @@ def _run_one_job(job_file, parallel_inside_job, doc_db_client):
         except:
             logger.error("'Failed' message failed to upload...")
 
-@retry_on_ssh_timeout
+@retry_on_ssh_timeout()
 def batch_run_with_single_ssh_and_retry(job_files_this_batch):
-    with DocumentDbSSHClient(credentials=credentials) as client:
+    with DocumentDbSSHClient(credentials=credentials) as client:  # This is only ssh connection to retry
         for job_file in job_files_this_batch:
             _run_one_job(job_file, parallel_inside_job=True, doc_db_client=client)
 
@@ -209,6 +209,10 @@ def run(parallel_on_jobs=False, debug_mode=True, docDB_ssh_batch_size=50):
 
         # Open ssh channel once for docDB_ssh_batch_size jobs to reduce ssh overhead
         for i in range(0, len(job_files), docDB_ssh_batch_size):
+            msg = f"---- Start batch {i+1} ----"
+            logger.info(msg)
+            print(msg, flush=True)
+            
             job_files_this_batch = job_files[i:i+docDB_ssh_batch_size]
             
             # Batch run with single ssh connection with retry
