@@ -69,7 +69,10 @@ def upload_results(job_hash, results):
 
     upload_status = {"s3_location": f"s3://{S3_RESULTS_ROOT}/{job_hash}"}
 
+
     # Save docDB record to s3 (and a local copy)
+    upload_record_docDB = results.get("upload_record_docDB", {})
+
     upload_s3_json(
         job_hash=job_hash,
         filename="docDB_record.json",
@@ -81,7 +84,6 @@ def upload_results(job_hash, results):
     print(msg, flush=True)
 
     # Upload record to docDB
-    upload_record_docDB = results.get("upload_record_docDB", {})
     try:
         upload_status_docDB = insert_result_to_docDB_ssh(
                 result_dict=upload_record_docDB, 
