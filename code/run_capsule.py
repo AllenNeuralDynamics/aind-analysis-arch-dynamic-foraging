@@ -6,6 +6,11 @@ import logging
 import importlib
 import traceback
 import os
+import socket
+
+# Define the Seattle timezone
+machine_name = socket.gethostname()
+
 from pymongo.errors import ServerSelectionTimeoutError
 
 import multiprocessing as mp
@@ -14,6 +19,7 @@ from utils.capture_logs import capture_logs
 from utils.docDB_io import (
     update_job_manager, 
     insert_result_to_docDB_ssh,
+    update_CO_machine_status,
     retry_on_ssh_timeout,
     DocumentDbSSHClient,
     credentials,
@@ -177,10 +183,39 @@ def _run_one_job(job_file, parallel_inside_job, doc_db_client):
             logger.error("'Failed' message failed to upload...")
 
 @retry_on_ssh_timeout()
-def batch_run_with_single_ssh_and_retry(job_files_this_batch):
+def batch_run_with_single_ssh_and_retry(batch_i, job_files_this_batch):
     with DocumentDbSSHClient(credentials=credentials) as client:  # This is only ssh connection to retry
-        for job_file in job_files_this_batch:
+        # Send a message to the CO_machine_log collection
+        update_CO_machine_status(
+            machine_name, batch_i, 
+            status_type="batch", 
+            status="start",
+            doc_db_client=client
+        )
+
+        for j, job_file in enumerate(job_files_this_batch):
+            job_hash = os.path.basename(job_file).replace(".json", "")
+        
+            update_CO_machine_status(
+                machine_name,
+                batch_i,
+                job_hash_name=f"{j+1}/{len(job_files_this_batch)}_{job_hash}",
+                status_type="job",
+                status="running",
+                doc_db_client=client,
+            )
+            
             _run_one_job(job_file, parallel_inside_job=True, doc_db_client=client)
+
+            # Update progress
+            update_CO_machine_status(
+                machine_name,
+                batch_i,
+                job_hash_name=f"{j+1}/{len(job_files_this_batch)}_{job_hash}",
+                status_type="job",
+                status="success",
+                doc_db_client=client,
+            )
 
 def run(parallel_on_jobs=False, debug_mode=True, docDB_ssh_batch_size=50):
     """
@@ -195,6 +230,8 @@ def run(parallel_on_jobs=False, debug_mode=True, docDB_ssh_batch_size=50):
 
     if debug_mode:
         job_files = job_files[:1]
+        
+    logger.info(f"The machine name is: {machine_name}")
 
     # For each job json, run the corresponding job using multiprocessing
     if parallel_on_jobs:
@@ -216,7 +253,7 @@ def run(parallel_on_jobs=False, debug_mode=True, docDB_ssh_batch_size=50):
             job_files_this_batch = job_files[i:i+docDB_ssh_batch_size]
             
             # Batch run with single ssh connection with retry
-            batch_run_with_single_ssh_and_retry(job_files_this_batch)
+            batch_run_with_single_ssh_and_retry(i, job_files_this_batch)
 
 
     logger.info(f"All done!")
