@@ -5,6 +5,7 @@ from pynwb import NWBHDF5IO
 import os
 import json
 import boto3
+from tqdm import tqdm
 
 S3_NWB_ROOT = "aind-behavior-data/"
 LOCAL_NWB_TMP = "/tmp"
@@ -19,7 +20,7 @@ def download_all_nwb_files_from_s3(job_files):
     """
     s3 = boto3.client('s3')
 
-    for job_file in job_files:
+    for job_file in tqdm(job_files, desc="Downloading nwbs...", total=len(job_files)):
         with open(job_file) as f:
             job_dict = json.load(f)
             file = job_dict["nwb_name"]
