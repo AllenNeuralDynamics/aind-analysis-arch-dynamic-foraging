@@ -59,15 +59,26 @@ def upload_results(job_hash, results):
             "s3_location": None,
         }
 
-    # Upload figures
+    # Upload figures to s3 (and a local copy)
     for fig_name, fig in results.get("upload_figs_s3", {}).items():
         upload_s3_fig(job_hash, fig_name, fig, if_save_local=True)
 
-    # Upload pkl files
+    # Upload pkl files to s3 (and a local copy)
     for pkl_name, pkl in results.get("upload_pkls_s3", {}).items():
         upload_s3_pkl(job_hash, pkl_name, pkl, if_save_local=True)
 
     upload_status = {"s3_location": f"s3://{S3_RESULTS_ROOT}/{job_hash}"}
+
+    # Save docDB record to s3 (and a local copy)
+    upload_s3_json(
+        job_hash=job_hash,
+        filename="docDB_record.json",
+        dict=upload_record_docDB,
+        if_save_local=True,
+    )
+    msg = f"Upload to s3 done! {'-' * 20}"
+    logger.info(msg)
+    print(msg, flush=True)
 
     # Upload record to docDB
     upload_record_docDB = results.get("upload_record_docDB", {})
@@ -76,6 +87,10 @@ def upload_results(job_hash, results):
                 result_dict=upload_record_docDB, 
                 collection_name="mle_fitting"
         )  # Note that this will add _id automatically to upload_record_docDB
+        msg = f"Insert docDB done! {'-' * 20}"
+        logger.info(msg)
+        print(msg, flush=True)
+        
     except Exception as e:
         upload_status.update(
             {
@@ -87,13 +102,6 @@ def upload_results(job_hash, results):
         return upload_status
         
     upload_status.update(upload_status_docDB)  
-    # Save a copy of docDB record to s3 and local
-    upload_s3_json(
-        job_hash=job_hash,
-        filename="docDB_record.json",
-        dict=upload_record_docDB,
-        if_save_local=True,
-    )
     return upload_status
 
 def _run_one_job(job_file, parallel_inside_job):
@@ -109,7 +117,9 @@ def _run_one_job(job_file, parallel_inside_job):
     try:
         # -- Trigger analysis --
         logger.info("")
-        logger.info(f"Running {job_dict['analysis_spec']['analysis_name']} for {job_dict['nwb_name']}")
+        msg = f"Running {job_dict['analysis_spec']['analysis_name']} for {job_dict['nwb_name']}"
+        logger.info(msg)
+        print(msg, flush=True)
         logger.info(f"Job hash: {job_hash}")
         
         # Update status to "running" in job manager DB
@@ -120,7 +130,7 @@ def _run_one_job(job_file, parallel_inside_job):
         logger.info(
             f"Job {job_hash} completed with status: {results['status']}"
         )
-        print(f"Job {job_hash} completed with status: {results['status']}")  # Print to console of CO pipeline run
+        print(f"Job {job_hash} completed with status: {results['status']}", flush=True)  # Print to console of CO pipeline run
 
         # -- Upload results --
         upload_response = capture_logs(logger)(upload_results)(job_hash, results)
@@ -142,7 +152,7 @@ def _run_one_job(job_file, parallel_inside_job):
     except Exception as e:  # Unhandled exception
         logger.error(f"Job {job_hash} failed with unhandled exception: {e}")
         logger.error(traceback.format_exc())  # Logs the full traceback
-        print(traceback.format_exc())  # For CO console
+        print(traceback.format_exc(), flush=True)  # For CO console
 
         try:
             update_job_manager(
