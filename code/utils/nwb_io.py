@@ -4,7 +4,7 @@ import numpy as np
 from pynwb import NWBHDF5IO
 import os
 
-from utils.aws_io import fs
+# from utils.aws_io import fs
 
 S3_NWB_ROOT = "aind-behavior-data/foraging_nwb_bonsai"
 

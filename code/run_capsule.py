@@ -229,7 +229,7 @@ def run(parallel_on_jobs=False, debug_mode=True, docDB_ssh_batch_size=50):
     job_files = glob.glob(f"{SCRIPT_DIR}/../data/jobs/**/*.json", recursive=True)
 
     if debug_mode:
-        job_files = job_files[:1]
+        job_files = job_files[:5]
         
     logger.info(f"The machine name is: {machine_name}")
 
