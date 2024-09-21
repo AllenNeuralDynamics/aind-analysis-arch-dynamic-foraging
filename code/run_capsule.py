@@ -47,9 +47,9 @@ ANALYSIS_MAPPER = {
 }
 
 
-def upload_results(job_hash, results, doc_db_client):
+def upload_results(job_hash, results):
     """
-    Upload results to S3 and docDB
+    Upload results to S3
 
     Parameters
     ----------
@@ -94,30 +94,30 @@ def upload_results(job_hash, results, doc_db_client):
     print(msg, flush=True)
 
     # Upload record to docDB
-    try:
-        upload_status_docDB = insert_result_to_docDB_ssh(
-                result_dict=upload_record_docDB, 
-                collection_name="mle_fitting",
-                doc_db_client=doc_db_client,
-        )  # Note that this will add _id automatically to upload_record_docDB
-        msg = f"Insert docDB done! {'-' * 20}"
-        logger.info(msg)
-        print(msg, flush=True)
+    # try:
+    #     upload_status_docDB = insert_result_to_docDB_ssh(
+    #             result_dict=upload_record_docDB, 
+    #             collection_name="mle_fitting",
+    #             doc_db_client=doc_db_client,
+    #     )  # Note that this will add _id automatically to upload_record_docDB
+    #     msg = f"Insert docDB done! {'-' * 20}"
+    #     logger.info(msg)
+    #     print(msg, flush=True)
         
-    except Exception as e:
-        upload_status.update(
-            {
-                "docDB_upload_status": "failed; too many SSH Errors",
-                "docDB_id": None,
-                "collection_name": None,
-            }
-        )
-        return upload_status
+    # except Exception as e:
+    #     upload_status.update(
+    #         {
+    #             "docDB_upload_status": "failed; too many SSH Errors",
+    #             "docDB_id": None,
+    #             "collection_name": None,
+    #         }
+    #     )
+    #     return upload_status
         
-    upload_status.update(upload_status_docDB)  
+    # upload_status.update(upload_status_docDB)  
     return upload_status
 
-def _run_one_job(job_file, parallel_inside_job, doc_db_client):
+def _run_one_job(job_file, parallel_inside_job):
     with open(job_file) as f:
         job_dict = json.load(f)
 
@@ -136,7 +136,7 @@ def _run_one_job(job_file, parallel_inside_job, doc_db_client):
         logger.info(f"Job hash: {job_hash}")
         
         # Update status to "running" in job manager DB
-        update_job_manager(job_hash=job_hash, update_dict={"status": "running"}, doc_db_client=doc_db_client)
+        # update_job_manager(job_hash=job_hash, update_dict={"status": "running"})
         
         analysis_results = capture_logs(logger)(analysis_fun)(job_dict, parallel_inside_job)
         results, log = analysis_results["result"], analysis_results["logs"]
@@ -146,76 +146,76 @@ def _run_one_job(job_file, parallel_inside_job, doc_db_client):
         print(f"Job {job_hash} completed with status: {results['status']}", flush=True)  # Print to console of CO pipeline run
 
         # -- Upload results --
-        upload_response = capture_logs(logger)(upload_results)(job_hash, results, doc_db_client)
-        upload_status, upload_log = upload_response["result"], upload_response["logs"]
-        log += upload_log  # Also add log during upload
+        upload_response = upload_results(job_hash, results)
+        # upload_status, upload_log = upload_response["result"], upload_response["logs"]
+        # log += upload_log  # Also add log during upload
         
         # -- Update job manager DB with log and status --
-        update_job_manager(
-            job_hash,
-            update_dict={
-                "status": results["status"],
-                "docDB_upload_status": upload_status["docDB_upload_status"],
-                "docDB_id": upload_status["docDB_id"],
-                "collection_name": upload_status["collection_name"],
-                "s3_location": upload_status["s3_location"],
-                "log": log,
-            },
-            doc_db_client=doc_db_client,
-        )
+        # update_job_manager(
+        #     job_hash,
+        #     update_dict={
+        #         "status": results["status"],
+        #         "docDB_upload_status": upload_status["docDB_upload_status"],
+        #         "docDB_id": upload_status["docDB_id"],
+        #         "collection_name": upload_status["collection_name"],
+        #         "s3_location": upload_status["s3_location"],
+        #         "log": log,
+        #     },
+        #     doc_db_client=doc_db_client,
+        # )
     except Exception as e:  # Unhandled exception
         logger.error(f"Job {job_hash} failed with unhandled exception: {e}")
         logger.error(traceback.format_exc())  # Logs the full traceback
         print(traceback.format_exc(), flush=True)  # For CO console
 
-        try:
-            update_job_manager(
-                job_hash,
-                update_dict={
-                    "status": "failed due to unhandled exception (see log)",
-                    "docDB_id": None,
-                    "collection_name": None,
-                    "log": log,
-                },
-                doc_db_client=doc_db_client,
-            )
-        except:
-            logger.error("'Failed' message failed to upload...")
+        # try:
+        #     update_job_manager(
+        #         job_hash,
+        #         update_dict={
+        #             "status": "failed due to unhandled exception (see log)",
+        #             "docDB_id": None,
+        #             "collection_name": None,
+        #             "log": log,
+        #         },
+        #         doc_db_client=doc_db_client,
+        #     )
+        # except:
+        #     logger.error("'Failed' message failed to upload...")
 
-@retry_on_ssh_timeout()
-def batch_run_with_single_ssh_and_retry(batch_i, job_files_this_batch):
-    with DocumentDbSSHClient(credentials=credentials) as client:  # This is only ssh connection to retry
-        # Send a message to the CO_machine_log collection
-        update_CO_machine_status(
-            machine_name, batch_i, 
-            status_type="batch", 
-            status="start",
-            doc_db_client=client
-        )
+# @retry_on_ssh_timeout()
+# def batch_run_with_single_ssh_and_retry(batch_i, job_files_this_batch):
+#     with DocumentDbSSHClient(credentials=credentials) as client:  # This is only ssh connection to retry
+#         # Send a message to the CO_machine_log collection
+#         update_CO_machine_status(
+#             machine_name, batch_i, 
+#             status_type="batch", 
+#             status="start",
+#             doc_db_client=client
+#         )
 
-        for j, job_file in enumerate(job_files_this_batch):
-            job_hash = os.path.basename(job_file).replace(".json", "")
+#         for j, job_file in enumerate(job_files_this_batch):
+#             job_hash = os.path.basename(job_file).replace(".json", "")
         
-            update_CO_machine_status(
-                machine_name,
-                batch_i,
-                job_hash_name=f"{j+1}/{len(job_files_this_batch)}_{job_hash}",
-                status_type="job",
-                status="running",
-                doc_db_client=client,
-            )
+#             update_CO_machine_status(
+#                 machine_name,
+#                 batch_i,
+#                 job_hash_name=f"{j+1}/{len(job_files_this_batch)}_{job_hash}",
+#                 status_type="job",
+#                 status="running",
+#                 doc_db_client=client,
+#             )
             
-            _run_one_job(job_file, parallel_inside_job=True, doc_db_client=client)
+#             _run_one_job(job_file, parallel_inside_job=True, doc_db_client=client)
 
-            # Update progress
-            update_CO_machine_status(
-                machine_name,
-                batch_i,
-                job_hash_name=f"{j+1}/{len(job_files_this_batch)}_{job_hash}",
-                status_type="job",
-                status="success",
-                doc_db_client=client,
-            )
+#             # Update progress
+#             update_CO_machine_status(
+#                 machine_name,
+#                 batch_i,
+#                 job_hash_name=f"{j+1}/{len(job_files_this_batch)}_{job_hash}",
+#                 status_type="job",
+#                 status="success",
+#                 doc_db_client=client,
+#             )
 
 def run(parallel_on_jobs=False, debug_mode=True, docDB_ssh_batch_size=50):
     """
@@ -243,17 +243,18 @@ def run(parallel_on_jobs=False, debug_mode=True, docDB_ssh_batch_size=50):
         pool.join()
     else:
         logger.info(f"\n\nRunning {len(job_files)} jobs, serial on jobs...")
+        [_run_one_job(job_file, parallel_inside_job=True) for job_file in job_files]
 
-        # Open ssh channel once for docDB_ssh_batch_size jobs to reduce ssh overhead
-        for i in range(0, len(job_files), docDB_ssh_batch_size):
-            msg = f"---- Start batch {i+1} ----"
-            logger.info(msg)
-            print(msg, flush=True)
+        # # Open ssh channel once for docDB_ssh_batch_size jobs to reduce ssh overhead
+        # for i in range(0, len(job_files), docDB_ssh_batch_size):
+        #     msg = f"---- Start batch {i+1} ----"
+        #     logger.info(msg)
+        #     print(msg, flush=True)
             
-            job_files_this_batch = job_files[i:i+docDB_ssh_batch_size]
+        #     job_files_this_batch = job_files[i:i+docDB_ssh_batch_size]
             
-            # Batch run with single ssh connection with retry
-            batch_run_with_single_ssh_and_retry(i, job_files_this_batch)
+        #     # Batch run with single ssh connection with retry
+        #     batch_run_with_single_ssh_and_retry(i, job_files_this_batch)
 
 
     logger.info(f"All done!")
@@ -273,7 +274,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # retrive the arguments
-    parallel_on_jobs = bool(int(args.parallel_on_jobs or "0"))  # Default 0
+    parallel_on_jobs = bool(int(args.parallel_on_jobs or "1"))  # Default 0
     debug_mode = bool(int(args.debug_mode or "1"))  # Default 1
 
     run(parallel_on_jobs=parallel_on_jobs, debug_mode=debug_mode)
