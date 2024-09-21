@@ -54,6 +54,7 @@ def upload_results(job_hash, results):
     if "skipped" in results["status"]:
         return {
             "docDB_id": None,
+            "docDB_upload_status": None,
             "collection_name": None,
             "s3_location": None,
         }
@@ -101,9 +102,6 @@ def _run_one_job(job_file, parallel_inside_job):
 
     job_hash = job_dict["job_hash"]
 
-    # Update status to "running" in job manager DB
-    update_job_manager(job_hash=job_hash, update_dict={"status": "running"})
-
     # Get analysis function
     package_name = ANALYSIS_MAPPER[job_dict["analysis_spec"]["analysis_name"]]
     analysis_fun = importlib.import_module(f"analysis_wrappers.{package_name}").wrapper_main
@@ -113,6 +111,9 @@ def _run_one_job(job_file, parallel_inside_job):
         logger.info("")
         logger.info(f"Running {job_dict['analysis_spec']['analysis_name']} for {job_dict['nwb_name']}")
         logger.info(f"Job hash: {job_hash}")
+        
+        # Update status to "running" in job manager DB
+        update_job_manager(job_hash=job_hash, update_dict={"status": "running"})
         
         analysis_results = capture_logs(logger)(analysis_fun)(job_dict, parallel_inside_job)
         results, log = analysis_results["result"], analysis_results["logs"]
@@ -141,15 +142,20 @@ def _run_one_job(job_file, parallel_inside_job):
     except Exception as e:  # Unhandled exception
         logger.error(f"Job {job_hash} failed with unhandled exception: {e}")
         logger.error(traceback.format_exc())  # Logs the full traceback
-        update_job_manager(
-            job_hash,
-            update_dict={
-                "status": "failed due to unhandled exception",
-                "docDB_id": None,
-                "collection_name": None,
-                "log": log,
-            },
-        )
+        print(traceback.format_exc())  # For CO console
+
+        try:
+            update_job_manager(
+                job_hash,
+                update_dict={
+                    "status": "failed due to unhandled exception (see log)",
+                    "docDB_id": None,
+                    "collection_name": None,
+                    "log": log,
+                },
+            )
+        except:
+            logger.error("'Failed' message failed to upload...")
 
 
 def run(parallel_on_jobs=False, debug_mode=True):

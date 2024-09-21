@@ -10,8 +10,8 @@ credentials.database = "behavior_analysis"
 
 logger = logging.getLogger(__name__)
 
-MAX_SSH_RETRIES = 10
-TIMEOUT = 5  # Time in seconds between retries
+MAX_SSH_RETRIES = 50
+TIMEOUT = 5 # Time in seconds between retries
 
 def retry_on_ssh_timeout(max_retries=MAX_SSH_RETRIES, timeout=TIMEOUT):
     """
